@@ -2,8 +2,8 @@ package pkg
 
 import (
 	"encoding/json"
-	"noneland/backend/interview/internal/entity"
 	"net/http"
+	"noneland/backend/interview/internal/entity"
 )
 
 // 定義 API 客戶端接口
@@ -13,8 +13,8 @@ type APIClient interface {
 	GetSpotTransactions() ([]entity.Transaction, error)
 }
 
-// 實現真實的 API 客戶端
-type RealAPIClient struct{}
+// 實現第三方交易所的 API 客戶端
+type ExAPIClient struct{}
 
 const (
 	SpotBalanceEndpoint            = "https://api.xxexchange.com/spot/balance"
@@ -22,7 +22,11 @@ const (
 	SpotTransactionHistoryEndpoint = "https://api.xxexchange.com/spot/transfer/records"
 )
 
-func (c *RealAPIClient) GetSpotBalance() (*entity.BalanceResponse, error) {
+func NewExAPIClient() *ExAPIClient {
+	return &ExAPIClient{}
+}
+
+func (c *ExAPIClient) GetSpotBalance() (*entity.BalanceResponse, error) {
 	resp, err := http.Get(SpotBalanceEndpoint)
 	if err != nil {
 		return nil, err
@@ -36,7 +40,7 @@ func (c *RealAPIClient) GetSpotBalance() (*entity.BalanceResponse, error) {
 	return &balance, nil
 }
 
-func (c *RealAPIClient) GetContractBalance() (*entity.BalanceResponse, error) {
+func (c *ExAPIClient) GetContractBalance() (*entity.BalanceResponse, error) {
 	resp, err := http.Get(ContractBalanceEndpoint)
 	if err != nil {
 		return nil, err
@@ -50,7 +54,7 @@ func (c *RealAPIClient) GetContractBalance() (*entity.BalanceResponse, error) {
 	return &balance, nil
 }
 
-func (c *RealAPIClient) GetSpotTransactions() ([]entity.Transaction, error) {
+func (c *ExAPIClient) GetSpotTransactions() ([]entity.Transaction, error) {
 	resp, err := http.Get(SpotTransactionHistoryEndpoint)
 	if err != nil {
 		return nil, err
@@ -62,8 +66,4 @@ func (c *RealAPIClient) GetSpotTransactions() ([]entity.Transaction, error) {
 		return nil, err
 	}
 	return transactions, nil
-}
-
-func NewRealAPIClient() *RealAPIClient {
-	return &RealAPIClient{}
 }

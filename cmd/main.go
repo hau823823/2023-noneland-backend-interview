@@ -14,7 +14,7 @@ func main() {
 	cfg := configs.NewConfig()
 
 	// 初始化各個依賴
-	apiClient := pkg.NewRealAPIClient()
+	apiClient := pkg.NewExAPIClient()
 	cache := pkg.NewCache()
 	dbClient, err := db.NewMySQLClient(cfg.DSN)
 	if err != nil {

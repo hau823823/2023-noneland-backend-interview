@@ -17,6 +17,11 @@ type MySQLClient struct {
 	DB *gorm.DB
 }
 
+
+func NewMySQLDBClient(dsn string) (DBClient, error) {
+	return NewMySQLClient(dsn)
+}
+
 // NewMySQLClient 創建一個新的 MySQLClient
 func NewMySQLClient(dsn string) (*MySQLClient, error) {
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
