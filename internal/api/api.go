@@ -77,3 +77,13 @@ func (api *API) GetBalancesAndTransactions(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+// GetAllTransactions 獲取所有交易紀錄
+func (api *API) GetAllTransactions(c *gin.Context) {
+	transactions, err := api.DBClient.GetAllTransactions()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, transactions)
+}

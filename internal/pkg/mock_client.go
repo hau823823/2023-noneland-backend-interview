@@ -24,3 +24,7 @@ func (m *MockAPIClient) GetSpotTransactions() ([]entity.Transaction, error) {
 	args := m.Called()
 	return args.Get(0).([]entity.Transaction), args.Error(1)
 }
+
+func NewMockAPIClient() *MockAPIClient {
+	return &MockAPIClient{}
+}

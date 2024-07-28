@@ -10,6 +10,7 @@ import (
 // DBClient 定義資料庫客戶端接口
 type DBClient interface {
 	SaveTransactions(transactions []entity.Transaction) error
+	GetAllTransactions() ([]entity.Transaction, error)
 }
 
 // MySQLClient 實現 DBClient 接口
@@ -46,4 +47,11 @@ func (c *MySQLClient) SaveTransactions(transactions []entity.Transaction) error 
 		}
 	}
 	return nil
+}
+
+// GetAllTransactions 獲取所有交易紀錄
+func (c *MySQLClient) GetAllTransactions() ([]entity.Transaction, error) {
+	var transactions []entity.Transaction
+	err := c.DB.Find(&transactions).Error
+	return transactions, err
 }
