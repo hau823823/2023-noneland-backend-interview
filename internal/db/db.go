@@ -1,19 +1,44 @@
 package db
 
 import (
-	"gorm.io/driver/sqlite"
+	"noneland/backend/interview/internal/entity"
+
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
-	"log"
 )
 
-func NewDb() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
-		Logger: logger.Discard,
-	})
+// DBClient 定義資料庫客戶端接口
+type DBClient interface {
+	SaveTransactions(transactions []entity.Transaction) error
+}
+
+// MySQLClient 實現 DBClient 接口
+type MySQLClient struct {
+	DB *gorm.DB
+}
+
+// NewMySQLClient 創建一個新的 MySQLClient
+func NewMySQLClient(dsn string) (*MySQLClient, error) {
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("gorm.Open 無法連接到記憶體數據庫：%v", err)
+		return nil, err
 	}
 
-	return db
+	err = db.AutoMigrate(&entity.Transaction{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &MySQLClient{DB: db}, nil
+}
+
+// SaveTransactions 儲存交易紀錄
+func (c *MySQLClient) SaveTransactions(transactions []entity.Transaction) error {
+	for _, txn := range transactions {
+		err := c.DB.Create(&txn).Error
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

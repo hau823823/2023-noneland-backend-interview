@@ -9,6 +9,7 @@ import (
 type Config struct {
 	Port string
 	Mode string
+	DSN  string
 }
 
 func init() {
@@ -32,5 +33,6 @@ func NewConfig() *Config {
 	return &Config{
 		Port: viper.GetString("port"),
 		Mode: viper.GetString("mode"),
+		DSN:  viper.GetString("dsn"),
 	}
 }

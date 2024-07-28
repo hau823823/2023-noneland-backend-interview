@@ -3,26 +3,34 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
-	"noneland/backend/interview/internal/di"
+	"noneland/backend/interview/configs"
+	"noneland/backend/interview/internal/api"
+	"noneland/backend/interview/internal/db"
 	"noneland/backend/interview/internal/pkg"
-
-	"time"
 )
 
 func main() {
-	config := di.NewConfig()
-	h2 := pkg.InitHttpHandler()
+	// 加載配置
+	cfg := configs.NewConfig()
 
-	s := &http.Server{
-		Addr:           fmt.Sprintf(":%s", config.Port),
-		Handler:        h2,
-		ReadTimeout:    60 * time.Second,
-		WriteTimeout:   60 * time.Second,
-		MaxHeaderBytes: 1 << 20,
+	// 初始化各個依賴
+	apiClient := pkg.NewRealAPIClient()
+	cache := pkg.NewCache()
+	dbClient, err := db.NewMySQLClient(cfg.DSN)
+	if err != nil {
+		log.Fatalf("could not initialize db client: %v", err)
 	}
-	fmt.Printf("開始監聽 %v\n", config.Port)
-	if err := s.ListenAndServe(); err != nil {
-		log.Fatal(err)
+
+	// 初始化 API
+	apiInstance := api.NewAPI(apiClient, cache, dbClient)
+	handlers := api.HandlerGroup{
+		API: apiInstance,
+	}
+
+	// 啟動服務器
+	server := api.NewServer(cfg, handlers)
+	fmt.Printf("開始監聽 %v\n", cfg.Port)
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatalf("could not start server: %v", err)
 	}
 }
