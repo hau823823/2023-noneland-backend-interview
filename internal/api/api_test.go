@@ -37,7 +37,7 @@ func TestGetBalancesAndTransactions(t *testing.T) {
 			ID:        "1",
 			Type:      "deposit",
 			Amount:    100.0,
-			Timestamp: time.Now(),
+			Timestamp: time.Now().UTC(),
 		},
 	}
 
