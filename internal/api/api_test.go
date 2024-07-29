@@ -13,9 +13,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
-func TestGetBalancesAndTransactions(t *testing.T) {
+func TestGetBalances(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	// 創建 Mock 客戶端
@@ -32,30 +33,20 @@ func TestGetBalancesAndTransactions(t *testing.T) {
 		Asset:   "USDT",
 		Balance: 500.0,
 	}
-	mockTransactions := []entity.Transaction{
-		{
-			ID:        "1",
-			Type:      "deposit",
-			Amount:    100.0,
-			Timestamp: time.Now().UTC(),
-		},
-	}
 
 	// 設置 Mock 行為
 	mockAPIClient.On("GetSpotBalance").Return(mockSpotBalance, nil)
 	mockAPIClient.On("GetContractBalance").Return(mockContractBalance, nil)
-	mockAPIClient.On("GetSpotTransactions").Return(mockTransactions, nil)
-	mockDBClient.On("SaveTransactions", mockTransactions).Return(nil)
 
 	apiInstance := NewAPI(mockAPIClient, mockCache, mockDBClient)
 
 	// 創建 Gin 引擎並註冊路由
 	router := gin.Default()
-	router.GET("/api/v1/balances_and_transactions", apiInstance.GetBalancesAndTransactions)
+	router.GET("/api/v1/balances", apiInstance.GetBalances)
 
 	// 發送 HTTP 請求並驗證響應
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/v1/balances_and_transactions", nil)
+	req, _ := http.NewRequest("GET", "/api/v1/balances", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -65,7 +56,6 @@ func TestGetBalancesAndTransactions(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, mockSpotBalance, response.SpotBalance)
 	assert.Equal(t, mockContractBalance, response.ContractBalance)
-	assert.Equal(t, mockTransactions, response.SpotTransactions)
 
 	// 驗證第二次請求應從緩存中獲取
 	w = httptest.NewRecorder()
@@ -76,7 +66,62 @@ func TestGetBalancesAndTransactions(t *testing.T) {
 	mockDBClient.AssertExpectations(t)
 }
 
-func TestGetAllTransactions(t *testing.T) {
+func TestFetchAndSaveSpotTransferRecords(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	// 創建 Mock 客戶端
+	mockAPIClient := new(pkg.MockAPIClient)
+	mockDBClient := new(db.MockDBClient)
+
+	// 定義 Mock 返回值
+	mockTransactions := []entity.Transaction{
+		{
+			ID:        "1",
+			Type:      "IN",
+			Amount:    0.1,
+			Asset:     "BNB",
+			Status:    "CONFIRMED",
+			Timestamp: time.Unix(1566898617, 0),
+			TxID:      5240372201,
+		},
+		{
+			ID:        "2",
+			Type:      "OUT",
+			Amount:    5.0,
+			Asset:     "USDT",
+			Status:    "CONFIRMED",
+			Timestamp: time.Unix(1566888436, 0),
+			TxID:      5239810406,
+		},
+	}
+
+	// 設置 Mock 行為
+	mockAPIClient.On("GetSpotTransferRecords", int64(0), int64(0), 1, 10).Return(mockTransactions, nil)
+	mockDBClient.On("SaveTransactions", mock.Anything).Return(nil)
+
+	apiInstance := NewAPI(mockAPIClient, pkg.NewCache(), mockDBClient)
+
+	// 創建 Gin 引擎並註冊路由
+	router := gin.Default()
+	router.POST("/api/v1/spot_transfer_records", apiInstance.FetchAndSaveSpotTransferRecords)
+
+	// 發送 HTTP 請求並驗證響應
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/v1/spot_transfer_records", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]string
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "Transactions have been saved to the database.", response["message"])
+
+	mockAPIClient.AssertExpectations(t)
+	mockDBClient.AssertExpectations(t)
+}
+
+func TestGetTransactions(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	// 創建 Mock 客戶端
@@ -86,30 +131,36 @@ func TestGetAllTransactions(t *testing.T) {
 	mockTransactions := []entity.Transaction{
 		{
 			ID:        "1",
-			Type:      "deposit",
-			Amount:    100.0,
-			Timestamp: time.Now().UTC(), // 統一使用 UTC 時區
+			Type:      "IN",
+			Amount:    0.1,
+			Asset:     "BNB",
+			Status:    "CONFIRMED",
+			Timestamp: time.Now().UTC(),
+			TxID:      5240372201,
 		},
 		{
 			ID:        "2",
-			Type:      "withdrawal",
-			Amount:    50.0,
-			Timestamp: time.Now().UTC(), // 統一使用 UTC 時區
+			Type:      "OUT",
+			Amount:    5.0,
+			Asset:     "USDT",
+			Status:    "CONFIRMED",
+			Timestamp: time.Now().UTC(),
+			TxID:      5239810406,
 		},
 	}
 
 	// 設置 Mock 行為
-	mockDBClient.On("GetAllTransactions").Return(mockTransactions, nil)
+	mockDBClient.On("GetTransactions", int64(0), int64(0)).Return(mockTransactions, nil)
 
 	apiInstance := NewAPI(nil, nil, mockDBClient)
 
 	// 創建 Gin 引擎並註冊路由
 	router := gin.Default()
-	router.GET("/api/v1/all_transactions", apiInstance.GetAllTransactions)
+	router.GET("/api/v1/transactions", apiInstance.GetTransactions)
 
 	// 發送 HTTP 請求並驗證響應
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/v1/all_transactions", nil)
+	req, _ := http.NewRequest("GET", "/api/v1/transactions", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
