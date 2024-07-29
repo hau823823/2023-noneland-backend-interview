@@ -13,5 +13,8 @@ type Transaction struct {
 	ID        string    `json:"id"`
 	Type      string    `json:"type"`
 	Amount    float64   `json:"amount"`
+	Asset     string    `json:"asset"`
+	Status    string    `json:"status"`
 	Timestamp time.Time `json:"timestamp"`
+	TxID      int64     `json:"txId"`
 }

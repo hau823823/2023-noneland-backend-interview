@@ -1,6 +1,8 @@
 package db
 
 import (
+	"time"
+
 	"noneland/backend/interview/internal/entity"
 
 	"gorm.io/driver/mysql"
@@ -11,6 +13,7 @@ import (
 type DBClient interface {
 	SaveTransactions(transactions []entity.Transaction) error
 	GetAllTransactions() ([]entity.Transaction, error)
+	GetTransactions(startTime, endTime int64) ([]entity.Transaction, error)
 }
 
 // MySQLClient 實現 DBClient 接口
@@ -54,4 +57,21 @@ func (c *MySQLClient) GetAllTransactions() ([]entity.Transaction, error) {
 	var transactions []entity.Transaction
 	err := c.DB.Find(&transactions).Error
 	return transactions, err
+}
+
+func (c *MySQLClient) GetTransactions(startTime, endTime int64) ([]entity.Transaction, error) {
+	var transactions []entity.Transaction
+	query := c.DB
+
+	if startTime > 0 {
+		query = query.Where("timestamp >= ?", time.Unix(startTime, 0))
+	}
+	if endTime > 0 {
+		query = query.Where("timestamp <= ?", time.Unix(endTime, 0))
+	}
+
+	if err := query.Find(&transactions).Error; err != nil {
+		return nil, err
+	}
+	return transactions, nil
 }

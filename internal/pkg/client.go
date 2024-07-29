@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
+
 	"noneland/backend/interview/internal/entity"
 )
 
@@ -11,7 +13,7 @@ import (
 type APIClient interface {
 	GetSpotBalance() (*entity.BalanceResponse, error)
 	GetContractBalance() (*entity.BalanceResponse, error)
-	GetSpotTransactions() ([]entity.Transaction, error)
+	GetSpotTransferRecords(startTime, endTime int64, current, size int) ([]entity.Transaction, error)
 }
 
 // 實現第三方交易所的 API 客戶端
@@ -81,13 +83,20 @@ func (c *ExAPIClient) GetContractBalance() (*entity.BalanceResponse, error) {
 	return &balance, nil
 }
 
-func (c *ExAPIClient) GetSpotTransactions() ([]entity.Transaction, error) {
+func (c *ExAPIClient) GetSpotTransferRecords(startTime, endTime int64, current, size int) ([]entity.Transaction, error) {
 	url := c.BaseURL + "/spot/transfer/records"
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==")
+
+	q := req.URL.Query()
+	q.Add("startTime", strconv.FormatInt(startTime, 10))
+	q.Add("endTime", strconv.FormatInt(endTime, 10))
+	q.Add("current", strconv.Itoa(current))
+	q.Add("size", strconv.Itoa(size))
+	req.URL.RawQuery = q.Encode()
 
 	resp, err := c.Client.Do(req)
 	if err != nil {
@@ -96,7 +105,7 @@ func (c *ExAPIClient) GetSpotTransactions() ([]entity.Transaction, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("failed to get spot transactions")
+		return nil, errors.New("failed to get spot transfer records")
 	}
 
 	var records struct {

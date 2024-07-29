@@ -14,10 +14,11 @@ type HandlerGroup struct {
 	*API
 }
 
-func registerRoute(router *gin.Engine, handlers HandlerGroup) {
+func registerRoutes(router *gin.Engine, handlers HandlerGroup) {
 	v1 := router.Group("/api/v1")
-
-	v1.GET("/balances_and_transactions", handlers.API.GetBalancesAndTransactions)
+	v1.GET("/balances", handlers.API.GetBalances)
+	v1.POST("/spot_transfer_records", handlers.API.FetchAndSaveSpotTransferRecords)
+	v1.GET("/transactions", handlers.API.GetTransactions)
 }
 
 func setupServer(router *gin.Engine, cfg *configs.Config) *http.Server {
@@ -38,14 +39,13 @@ func setupServer(router *gin.Engine, cfg *configs.Config) *http.Server {
 func NewServer(cfg *configs.Config, handlers HandlerGroup) *http.Server {
 	router := gin.New()
 	server := setupServer(router, cfg)
-	registerRoute(router, handlers)
+	registerRoutes(router, handlers)
 	return server
 }
 
-// NewRouter 可用在 httptest.NewServer 進行 integration test
 func NewRouter(cfg *configs.Config, handlers HandlerGroup) *gin.Engine {
 	router := gin.New()
 	setupServer(router, cfg)
-	registerRoute(router, handlers)
+	registerRoutes(router, handlers)
 	return router
 }
