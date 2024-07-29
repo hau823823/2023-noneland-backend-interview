@@ -53,7 +53,7 @@ myapp/
    
 2. FetchAndSaveSpotTransferRecords
 
-   獲取第三方交易所現貨帳戶轉入轉出紀錄並保存到數據
+   獲取第三方交易所現貨帳戶轉入轉出紀錄並保存到 DB
 
    **Endpoint**
    ```plaintext
@@ -68,7 +68,7 @@ myapp/
 
 3. GetTransactions
 
-   從數據庫中獲取交易紀錄
+   從DB中獲取交易紀錄
    
    **Endpoint**
    ```plaintext
