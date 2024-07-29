@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"noneland/backend/interview/internal/entity"
+
 	"github.com/stretchr/testify/mock"
 )
 
@@ -20,8 +21,8 @@ func (m *MockAPIClient) GetContractBalance() (*entity.BalanceResponse, error) {
 	return args.Get(0).(*entity.BalanceResponse), args.Error(1)
 }
 
-func (m *MockAPIClient) GetSpotTransactions() ([]entity.Transaction, error) {
-	args := m.Called()
+func (m *MockAPIClient) GetSpotTransferRecords(startTime, endTime int64, current, size int) ([]entity.Transaction, error) {
+	args := m.Called(startTime, endTime, current, size)
 	return args.Get(0).([]entity.Transaction), args.Error(1)
 }
 

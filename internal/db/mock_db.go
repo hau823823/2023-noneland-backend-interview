@@ -21,6 +21,11 @@ func (m *MockDBClient) GetAllTransactions() ([]entity.Transaction, error) {
 	return args.Get(0).([]entity.Transaction), args.Error(1)
 }
 
-func NewMockDBClient() DBClient {
+func (m *MockDBClient) GetTransactions(startTime, endTime int64) ([]entity.Transaction, error) {
+	args := m.Called(startTime, endTime)
+	return args.Get(0).([]entity.Transaction), args.Error(1)
+}
+
+func NewMockDBClient() *MockDBClient {
 	return &MockDBClient{}
 }
