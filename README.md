@@ -1,5 +1,117 @@
 # 2023 noneland backend interview
 
+## 目錄結構
+
+```plaintext
+myapp/
+|-- cmd/
+|   `-- main.go
+|-- configs/
+|   |-- app.env
+|   `-- config.go
+|-- internal/
+|   |-- api/
+|   |   |-- api_test.go
+|   |   |-- api.go
+|   |   `-- server.go
+|   |-- db/
+|   |   |-- db_test.go
+|   |   |-- db.go
+|   |   `-- mock_db.go
+|   |-- entity/
+|   |   `-- entity.go
+|   `-- pkg/
+|       |-- cache.go
+|       |-- client_test.go
+|       |-- client.go
+|       |-- mock_client.go
+|-- go.mod
+`-- go.sum
+```
+## API 說明
+1. GetBalances
+   
+   獲取現貨和合約餘額
+   
+   **Endpoint**
+   ```plaintext
+   GET /api/v1/balances
+   ```
+   **Response**
+   ```json
+   {
+     "spot_balance": {
+       "asset": "USDT",
+       "balance": 1000.0
+     },
+     "contract_balance": {
+       "asset": "USDT",
+       "balance": 500.0
+     }
+   }
+   ```
+   
+2. FetchAndSaveSpotTransferRecords
+
+   獲取第三方交易所現貨帳戶轉入轉出紀錄並保存到數據
+
+   **Endpoint**
+   ```plaintext
+   POST /api/v1/spot_transfer_records
+   ```
+   **Response**
+   ```json
+   {
+     "message": "Transactions have been saved to the database."
+   }
+   ```
+
+3. GetTransactions
+
+   從數據庫中獲取交易紀錄
+   
+   **Endpoint**
+   ```plaintext
+   POST /api/v1/spot_transfer_records
+   ```
+   **Guery Parameters**
+   - startTime (optional): 開始時間
+   - endTime (optional): 結束時間
+
+   **Response**
+   ```json
+   {
+    "id": "1",
+    "type": "IN",
+    "amount": 0.1,
+    "asset": "BNB",
+    "status": "CONFIRMED",
+    "timestamp": "2019-08-27T15:36:57Z",
+    "txId": 5240372201
+     },
+     {
+       "id": "2",
+       "type": "OUT",
+       "amount": 5.0,
+       "asset": "USDT",
+       "status": "CONFIRMED",
+       "timestamp": "2019-08-27T13:13:56Z",
+       "txId": 5239810406
+     }
+   ```
+## 流程圖
+```mermaid
+graph TD
+    A[Client Request] -->|GET /api/v1/balances| B[API Handler]
+    B --> C[Check Cache]
+    C -->|Cache Hit| D[Return Cached Response]
+    C -->|Cache Miss| E[Call GetSpotBalance API]
+    E --> F[Call GetContractBalance API]
+    F --> G[Combine Results]
+    G --> H[Save to Cache]
+    H --> I[Return Response]
+```
+    
 ## 前情提要
 
 假定我們自己的 `中心化` 交易所，已有錢包 app 完成初步現貨交易
@@ -14,11 +126,24 @@
 
 ## 基本規格
 
-1. 第一隻 api，同時回傳兩種餘額
-   1. 需要顯示 `XX交易所` 的 `現貨` 帳戶 USDT 餘額
+1. :white_check_mark:第一隻 api，同時回傳兩種餘額 
+   1. 需要顯示 `XX交易所` 的 `現貨` 帳戶 USDT 餘額 
    1. 需要顯示 `XX交易所` 的 `合約` 帳戶 USDT 餘額
-2. 需要顯示 `現貨` 帳戶轉出轉入紀錄（`第三方XX交易所僅提供一個月內的交易紀錄查詢`）
+2. :white_check_mark:需要顯示 `現貨` 帳戶轉出轉入紀錄（`第三方XX交易所僅提供一個月內的交易紀錄查詢`）
    1. 根據法律遵循，我們應該保存 `6年` 內的所有交易紀錄
+
+## 加分題
+
+1. :white_check_mark:目前前端 app 的現貨買賣幣種報價使用的是 `現貨` 相關的 api，並且 api 存在呼叫限制，後台的呼叫不應該影響報價邏輯
+   使用 cache 來處理
+2. :white_check_mark:請撰寫可被測試的程式碼，或是直接附上測試程式
+   預期你可以使用 mock 的方式來處理第三方，並通過 di 的方式注入，但使用其他方式也行
+3. 架構也能調整，假設你覺得有更好的改法
+
+## 待完善
+
+1. :small_orange_diamond:cache 部分僅進行了簡單的實作，實務上可以搭配 redis 來完善
+2. :small_orange_diamond:di 部分沒有使用 wire 框架實作
 
 ## 備註
 
@@ -30,13 +155,6 @@
 
 有任何題目上的問題都可以寫信發問
 
-## 加分題
-
-1. 目前前端 app 的現貨買賣幣種報價使用的是 `現貨` 相關的 api，並且 api 存在呼叫限制，後台的呼叫不應該影響報價邏輯
-   這邊可以畫出流程圖、架構圖或是直接程式碼都可以，是個開放式的問題
-2. 請撰寫可被測試的程式碼，或是直接附上測試程式
-   預期你可以使用 mock 的方式來處理第三方，並通過 di 的方式注入，但使用其他方式也行
-3. 架構也能調整，假設你覺得有更好的改法
 
 ## XX交易所 api 文件
 
